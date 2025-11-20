@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HslGateway", "HslGateway\HslGateway.csproj", "{0362009D-75BA-41D8-A534-08E5D4BED4FC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HslSimulator", "HslSimulator\HslSimulator.csproj", "{2B84EF7F-82E9-4B6B-BEB5-FE0D081545F1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0362009D-75BA-41D8-A534-08E5D4BED4FC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0362009D-75BA-41D8-A534-08E5D4BED4FC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0362009D-75BA-41D8-A534-08E5D4BED4FC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0362009D-75BA-41D8-A534-08E5D4BED4FC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B84EF7F-82E9-4B6B-BEB5-FE0D081545F1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B84EF7F-82E9-4B6B-BEB5-FE0D081545F1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B84EF7F-82E9-4B6B-BEB5-FE0D081545F1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B84EF7F-82E9-4B6B-BEB5-FE0D081545F1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
