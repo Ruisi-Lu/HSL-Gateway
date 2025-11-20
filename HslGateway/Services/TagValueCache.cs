@@ -9,11 +9,20 @@ public sealed class TagValueCache
 
     private static string GetKey(string deviceId, string tagName) => $"{deviceId}:{tagName}";
 
+    public event Action<TagValue>? OnValueChanged;
+    public event Action<string, bool>? OnDeviceStatusChanged;
+
     public void Save(TagValue value)
     {
         if (value == null) return;
         var key = GetKey(value.DeviceId, value.TagName);
         _cache[key] = value;
+        OnValueChanged?.Invoke(value);
+    }
+
+    public void UpdateDeviceStatus(string deviceId, bool isOnline)
+    {
+        OnDeviceStatusChanged?.Invoke(deviceId, isOnline);
     }
 
     public TagValue? Get(string deviceId, string tagName)

@@ -119,6 +119,16 @@ grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power"}' local
 grpcurl -plaintext localhost:50051 hslgateway.Gateway/ListDevices
 ```
 
+**Write Tag Value:**
+```bash
+grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power", "value": 50}' localhost:50051 hslgateway.Gateway/WriteTagValue
+```
+
+**Subscribe to Tag Value (Streaming):**
+```bash
+grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power"}' localhost:50051 hslgateway.Gateway/SubscribeTagValue
+```
+
 ## 🐳 Docker Deployment
 
 Build and run the container:

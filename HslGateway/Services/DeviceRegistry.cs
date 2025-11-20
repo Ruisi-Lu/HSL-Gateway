@@ -20,6 +20,7 @@ public class DeviceRegistry
                 {
                     "SiemensS7" => new SiemensHslClient(device, loggerFactory.CreateLogger<SiemensHslClient>()),
                     "ModbusTcp" => new ModbusTcpHslClient(device, loggerFactory.CreateLogger<ModbusTcpHslClient>()),
+                    "ModbusRtu" => new ModbusRtuHslClient(device, loggerFactory.CreateLogger<ModbusRtuHslClient>()),
                     _ => throw new NotSupportedException($"Device type '{device.Type}' is not supported.")
                 };
                 _clients.Add(device.Id, client);

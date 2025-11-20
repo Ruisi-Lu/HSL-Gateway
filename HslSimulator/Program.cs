@@ -30,16 +30,23 @@ class Program
                 var random = new Random();
                 while (true)
                 {
+                    // Only update if we haven't received a write recently? 
+                    // Or just update less frequently so we have time to verify.
+                    // Let's update every 5 seconds.
+                    
                     short power = (short)random.Next(100, 200);
+                    // We use a lock or just let it race, it's a sim.
+                    // But to verify WRITE, we should probably use a different register 
+                    // or check the console output of the simulator to see if it received a write.
+                    // HslCommunication Server doesn't automatically log writes to console unless we hook it.
+                    
+                    // Let's hook into the server's write event if possible, or just trust the client side.
+                    // For now, let's just update 40001 less often.
+                    
                     server.Write("40001", power);
-                    Console.WriteLine($"[Sim] Updated 40001 (line_power) to {power}");
+                    Console.WriteLine($"[Sim] Auto-updated 40001 (line_power) to {power}");
                     
-                    // Simulate a float value for Siemens (mapped to Modbus for simplicity in this test, 
-                    // or we can start a Siemens server too if HSL supports it. 
-                    // HslCommunication supports SiemensServer, let's try that too if needed.
-                    // For now, let's just test Modbus.)
-                    
-                    await Task.Delay(2000);
+                    await Task.Delay(5000);
                 }
             });
 

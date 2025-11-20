@@ -37,6 +37,7 @@ public class PollingWorker : BackgroundService
             {
                 var client = _registry.GetClient(device.Id);
                 await client.ConnectAsync(token);
+                _cache.UpdateDeviceStatus(device.Id, true);
                 
                 var deviceTags = _config.Tags.Where(t => t.DeviceId == device.Id).ToList();
 
@@ -69,6 +70,7 @@ public class PollingWorker : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error in polling loop for device {Device}. Retrying in 5s...", device.Id);
+                _cache.UpdateDeviceStatus(device.Id, false);
                 await Task.Delay(5000, token);
             }
         }

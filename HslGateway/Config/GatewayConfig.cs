@@ -15,6 +15,14 @@ public class DeviceConfig
     public int? Rack { get; set; } // for Siemens
     public int? Slot { get; set; } // for Siemens
     public int PollIntervalMs { get; set; } = 1000;
+
+    // Serial Parameters
+    public string? PortName { get; set; }
+    public int? BaudRate { get; set; }
+    public int? DataBits { get; set; }
+    public int? StopBits { get; set; }
+    public int? Parity { get; set; }
+    public byte Station { get; set; } = 1;
 }
 
 public class TagConfig
