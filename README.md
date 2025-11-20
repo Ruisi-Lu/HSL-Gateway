@@ -13,6 +13,7 @@ HSL Gateway is a high-performance, production-ready gRPC service designed to bri
 - **Resilient**: Automatic reconnection and error handling for device communication.
 - **Docker Ready**: Includes a multi-stage Dockerfile for easy deployment on Linux/Kubernetes.
 - **Simulator Included**: Comes with a Modbus TCP simulator for testing and verification.
+- **Scalable**: Supports connecting to multiple devices simultaneously with parallel polling.
 
 ## 🛠️ Technology Stack
 
@@ -95,6 +96,14 @@ Configure devices and tags in `appsettings.json`.
   ]
 }
 ```
+
+### Multi-Device Support
+
+The Gateway supports connecting to multiple devices simultaneously. Simply add more entries to the `Devices` array in `appsettings.json`.
+
+- Each device runs in its own independent polling loop.
+- A slow or disconnected device will **not** affect the performance of other devices.
+- You can mix different protocols (e.g., one Siemens PLC and one Modbus device) in the same configuration.
 
 ## 🔌 API Usage (gRPC)
 
