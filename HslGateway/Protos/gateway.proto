@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+option csharp_namespace = "HslGateway.Grpc";
+
+package hslgateway;
+
+service Gateway {
+  rpc GetTagValue (TagRequest) returns (TagResponse);
+  rpc ListDevices (Empty) returns (DeviceList);
+  rpc ListDeviceTags (DeviceRequest) returns (TagList);
+}
+
+message Empty {}
+
+message TagRequest {
+  string deviceId = 1;
+  string tagName = 2;
+}
+
+message TagResponse {
+  string deviceId = 1;
+  string tagName = 2;
+  double value = 3;
+  string timestampUtc = 4;
+  string quality = 5;
+}
+
+message DeviceRequest {
+  string deviceId = 1;
+}
+
+message Device {
+  string id = 1;
+}
+
+message DeviceList {
+  repeated Device devices = 1;
+}
+
+message TagInfo {
+  string deviceId = 1;
+  string tagName = 2;
+  string address = 3;
+  string dataType = 4;
+}
+
+message TagList {
+  repeated TagInfo tags = 1;
+}
