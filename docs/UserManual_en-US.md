@@ -52,6 +52,12 @@ Define devices to connect to in the `Gateway:Devices` section.
 | `Rack` | Rack Number (Siemens only) | `0` |
 | `Slot` | Slot Number (Siemens only) | `1` |
 | `PollIntervalMs` | Polling Interval (ms) | `1000` |
+| `PortName` | Serial Port Name (Modbus RTU only) | `"COM1"` or `"/dev/ttyUSB0"` |
+| `BaudRate` | Baud Rate (Modbus RTU only) | `9600` |
+| `DataBits` | Data Bits (Modbus RTU only) | `8` |
+| `StopBits` | Stop Bits (Modbus RTU only) | `1` |
+| `Parity` | Parity (Modbus RTU only) | `0` (None), `1` (Odd), `2` (Even) |
+| `Station` | Station ID (Modbus RTU only) | `1` |
 
 **Example:**
 ```json
@@ -124,6 +130,54 @@ The service uses gRPC and listens on Port `50051` by default.
     { "id": "modbus_01" }
   ]
 }
+  ]
+}
+```
+
+### 4.3 Write Tag Value (WriteTagValue)
+
+**Request:**
+```json
+{
+  "deviceId": "modbus_01",
+  "tagName": "line_power",
+  "value": 1234.5
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Success"
+}
+```
+
+### 4.4 Subscribe Tag Value (SubscribeTagValue)
+
+This is a Server-Streaming RPC. The client will receive continuous updates after connection.
+
+**Request:**
+```json
+{
+  "deviceId": "modbus_01",
+  "tagName": "line_power"
+}
+```
+
+**Response Stream:**
+```json
+{ "deviceId": "modbus_01", "tagName": "line_power", "value": 100, ... }
+{ "deviceId": "modbus_01", "tagName": "line_power", "value": 101, ... }
+...
+```
+
+## 5. Verification Tool (HslVerifier)
+
+The project includes a built-in verification tool to test all API features.
+
+```bash
+dotnet run --project HslVerifier/HslVerifier.csproj
 ```
 
 ## 5. FAQ
@@ -135,4 +189,7 @@ A: You need to modify `DeviceRegistry.cs` and implement a new `IHslClient`.
 A: Check the `PollIntervalMs` setting and network quality. Each device runs in its own thread, so they do not block each other.
 
 **Q: Is writing supported?**
-A: The underlying `IHslClient` supports `WriteAsync`, but the gRPC interface does not expose a write API yet. You would need to extend `gateway.proto` and `GatewayService.cs`.
+A: Yes, the `WriteTagValue` API is supported.
+
+**Q: Is Modbus RTU supported?**
+A: Yes, specify `Type` as `ModbusRtu` in the configuration and set `PortName` and other parameters.

@@ -52,6 +52,12 @@ dotnet run --project HslGateway/HslGateway.csproj
 | `Rack` | 機架號 (僅 Siemens) | `0` |
 | `Slot` | 插槽號 (僅 Siemens) | `1` |
 | `PollIntervalMs` | 輪詢間隔 (毫秒) | `1000` |
+| `PortName` | 序列埠名稱 (僅 Modbus RTU) | `"COM1"` 或 `"/dev/ttyUSB0"` |
+| `BaudRate` | 鮑率 (僅 Modbus RTU) | `9600` |
+| `DataBits` | 資料位元 (僅 Modbus RTU) | `8` |
+| `StopBits` | 停止位元 (僅 Modbus RTU) | `1` |
+| `Parity` | 同位檢查 (僅 Modbus RTU) | `0` (None), `1` (Odd), `2` (Even) |
+| `Station` | 站號 (僅 Modbus RTU) | `1` |
 
 **範例：**
 ```json
@@ -124,6 +130,54 @@ dotnet run --project HslGateway/HslGateway.csproj
     { "id": "modbus_01" }
   ]
 }
+  ]
+}
+```
+
+### 4.3 寫入標籤數值 (WriteTagValue)
+
+**Request:**
+```json
+{
+  "deviceId": "modbus_01",
+  "tagName": "line_power",
+  "value": 1234.5
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Success"
+}
+```
+
+### 4.4 訂閱標籤數值 (SubscribeTagValue)
+
+此為 Server-Streaming RPC，客戶端連線後會持續收到數據變更通知。
+
+**Request:**
+```json
+{
+  "deviceId": "modbus_01",
+  "tagName": "line_power"
+}
+```
+
+**Response Stream:**
+```json
+{ "deviceId": "modbus_01", "tagName": "line_power", "value": 100, ... }
+{ "deviceId": "modbus_01", "tagName": "line_power", "value": 101, ... }
+...
+```
+
+## 5. 驗證工具 (HslVerifier)
+
+專案內建一個自動化驗證工具，可用於測試所有 API 功能。
+
+```bash
+dotnet run --project HslVerifier/HslVerifier.csproj
 ```
 
 ## 5. 常見問題 (FAQ)
@@ -135,4 +189,7 @@ A: 需要修改 `DeviceRegistry.cs` 並實作新的 `IHslClient`。
 A: 請檢查 `PollIntervalMs` 設定，並確認網路連線品質。每個設備都是獨立執行緒，互不影響。
 
 **Q: 支援寫入功能嗎？**
-A: 底層 `IHslClient` 已支援 `WriteAsync`，但目前 gRPC 介面尚未開放寫入 API，需自行擴充 `gateway.proto` 與 `GatewayService.cs`。
+A: 是的，已支援 `WriteTagValue` API。
+
+**Q: 支援 Modbus RTU 嗎？**
+A: 是的，請在設定檔中指定 `Type` 為 `ModbusRtu` 並設定 `PortName` 等參數。
