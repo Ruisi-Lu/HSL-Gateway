@@ -6,6 +6,7 @@ namespace HslGateway.Services;
 public sealed class TagValueCache
 {
     private readonly ConcurrentDictionary<string, TagValue> _cache = new();
+    private readonly ConcurrentDictionary<string, bool> _deviceStatus = new();
 
     private static string GetKey(string deviceId, string tagName) => $"{deviceId}:{tagName}";
 
@@ -22,7 +23,29 @@ public sealed class TagValueCache
 
     public void UpdateDeviceStatus(string deviceId, bool isOnline)
     {
-        OnDeviceStatusChanged?.Invoke(deviceId, isOnline);
+        var changed = true;
+        // Only raise event when status actually changed
+        _deviceStatus.AddOrUpdate(deviceId, isOnline, (k, old) =>
+        {
+            changed = old != isOnline;
+            return isOnline;
+        });
+
+        if (changed)
+        {
+            OnDeviceStatusChanged?.Invoke(deviceId, isOnline);
+        }
+    }
+
+    public bool? GetDeviceStatus(string deviceId)
+    {
+        if (_deviceStatus.TryGetValue(deviceId, out var v)) return v;
+        return null;
+    }
+
+    public IDictionary<string, bool> GetAllDeviceStatus()
+    {
+        return _deviceStatus.ToDictionary(kv => kv.Key, kv => kv.Value);
     }
 
     public TagValue? Get(string deviceId, string tagName)

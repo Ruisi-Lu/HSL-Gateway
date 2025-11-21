@@ -184,11 +184,36 @@ public class GatewayService : Gateway.GatewayBase
 
         try
         {
-            // Send initial status? 
-            // We don't track current status in a queryable way in cache easily without adding more logic, 
-            // but for now we just stream updates. 
-            // Ideally we should send current status. Let's assume the client waits for updates or we add GetDeviceStatus later.
-            // For now, just stream updates.
+            var wantsAllDevices = string.IsNullOrWhiteSpace(request.DeviceId);
+
+            if (wantsAllDevices)
+            {
+                var all = _cache.GetAllDeviceStatus();
+                foreach (var kvp in all)
+                {
+                    await responseStream.WriteAsync(new DeviceStatusResponse
+                    {
+                        DeviceId = kvp.Key,
+                        IsOnline = kvp.Value,
+                        TimestampUtc = DateTime.UtcNow.ToString("o")
+                    });
+                }
+            }
+            else
+            {
+                var initial = _cache.GetDeviceStatus(request.DeviceId);
+                if (initial.HasValue)
+                {
+                    await responseStream.WriteAsync(new DeviceStatusResponse
+                    {
+                        DeviceId = request.DeviceId,
+                        IsOnline = initial.Value,
+                        TimestampUtc = DateTime.UtcNow.ToString("o")
+                    });
+                }
+            }
+
+            // Then stream updates
 
             while (!context.CancellationToken.IsCancellationRequested)
             {

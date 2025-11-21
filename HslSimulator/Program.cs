@@ -1,6 +1,7 @@
 ﻿using HslCommunication.ModBus;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace HslSimulator;
 
@@ -8,56 +9,119 @@ class Program
 {
     static void Main(string[] args)
     {
-        Console.WriteLine("Starting HSL Modbus TCP Simulator...");
+        Console.WriteLine("═══════════════════════════════════════════════");
+        Console.WriteLine("   HSL 多設備 Modbus TCP 模擬器");
+        Console.WriteLine("═══════════════════════════════════════════════\n");
 
         try
         {
-            // Create a Modbus TCP Server
-            ModbusTcpServer server = new ModbusTcpServer();
+            // 創建多個 Modbus TCP 伺服器
+            var server1 = new ModbusTcpServer();
+            var server2 = new ModbusTcpServer();
+            var server3 = new ModbusTcpServer();
             
-            // Initialize some data
-            // 40001 corresponds to address "0" in HslCommunication server usually, or we can map it.
-            // HslCommunication ModbusServer uses standard mapping.
-            // Let's write some initial values.
+            // 啟動伺服器在不同 Port
+            server1.ServerStart(50502);
+            Console.WriteLine("✅ 設備 1 (modbus_01) 已啟動 - Port 50502");
             
-            server.ServerStart(50502); // Use a non-privileged port
+            server2.ServerStart(50503);
+            Console.WriteLine("✅ 設備 2 (modbus_02) 已啟動 - Port 50503");
             
-            Console.WriteLine("Modbus TCP Server started on port 50502");
+            server3.ServerStart(50504);
+            Console.WriteLine("✅ 設備 3 (modbus_03) 已啟動 - Port 50504");
             
-            // Simulate data changes
+            Console.WriteLine("\n模擬器配置:");
+            Console.WriteLine("  modbus_01 (Port 50502):");
+            Console.WriteLine("    - line_power   (40001) : 線路功率");
+            Console.WriteLine("    - temperature  (40002) : 溫度");
+            Console.WriteLine("  modbus_02 (Port 50503):");
+            Console.WriteLine("    - motor_speed  (40001) : 馬達轉速");
+            Console.WriteLine("    - pressure     (40002) : 壓力");
+            Console.WriteLine("  modbus_03 (Port 50504):");
+            Console.WriteLine("    - flow_rate    (40001) : 流量");
+            Console.WriteLine("    - level        (40002) : 液位");
+            
+            Console.WriteLine("\n開始模擬數據變化...\n");
+            
+            // 模擬設備 1 的數據變化
             Task.Run(async () =>
             {
-                var random = new Random();
+                var random = new Random(1);
                 while (true)
                 {
-                    // Only update if we haven't received a write recently? 
-                    // Or just update less frequently so we have time to verify.
-                    // Let's update every 5 seconds.
-                    
                     short power = (short)random.Next(100, 200);
-                    // We use a lock or just let it race, it's a sim.
-                    // But to verify WRITE, we should probably use a different register 
-                    // or check the console output of the simulator to see if it received a write.
-                    // HslCommunication Server doesn't automatically log writes to console unless we hook it.
+                    short temp = (short)random.Next(20, 80);
                     
-                    // Let's hook into the server's write event if possible, or just trust the client side.
-                    // For now, let's just update 40001 less often.
+                    server1.Write("40001", power);
+                    server1.Write("40002", temp);
                     
-                    server.Write("40001", power);
-                    Console.WriteLine($"[Sim] Auto-updated 40001 (line_power) to {power}");
+                    Console.WriteLine($"[設備1] line_power={power,3}, temperature={temp,2}");
                     
                     await Task.Delay(5000);
                 }
             });
 
-            Console.WriteLine("Press any key to stop...");
-            Console.ReadLine();
+            // 模擬設備 2 的數據變化
+            Task.Run(async () =>
+            {
+                var random = new Random(2);
+                await Task.Delay(1000); // 錯開更新時間
+                
+                while (true)
+                {
+                    short speed = (short)random.Next(1000, 3000);
+                    short pressure = (short)random.Next(10, 100);
+                    
+                    server2.Write("40001", speed);
+                    server2.Write("40002", pressure);
+                    
+                    Console.WriteLine($"[設備2] motor_speed={speed,4}, pressure={pressure,2}");
+                    
+                    await Task.Delay(5000);
+                }
+            });
+
+            // 模擬設備 3 的數據變化
+            Task.Run(async () =>
+            {
+                var random = new Random(3);
+                await Task.Delay(2000); // 錯開更新時間
+                
+                while (true)
+                {
+                    short flowRate = (short)random.Next(50, 500);
+                    short level = (short)random.Next(0, 100);
+                    
+                    server3.Write("40001", flowRate);
+                    server3.Write("40002", level);
+                    
+                    Console.WriteLine($"[設備3] flow_rate={flowRate,3}, level={level,2}");
+                    
+                    await Task.Delay(5000);
+                }
+            });
+
+            Console.WriteLine("按任意鍵停止模擬器...\n");
+            if (Console.IsInputRedirected)
+            {
+                Console.WriteLine("(stdin 已重定向，模擬器將持續運行，按 Ctrl+C 或終止程序即可)");
+                Task.Delay(Timeout.Infinite).Wait();
+            }
+            else
+            {
+                Console.ReadLine();
+            }
             
-            server.ServerClose();
+            Console.WriteLine("\n正在關閉伺服器...");
+            server1.ServerClose();
+            server2.ServerClose();
+            server3.ServerClose();
+            Console.WriteLine("✅ 所有伺服器已關閉");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
+            Console.WriteLine($"❌ 錯誤: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
         }
     }
 }

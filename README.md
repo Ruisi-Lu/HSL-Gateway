@@ -129,6 +129,16 @@ grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power", "value
 grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power"}' localhost:50051 hslgateway.Gateway/SubscribeTagValue
 ```
 
+## 🧪 Test Scripts
+
+Interactive bash scripts live under `scripts/tests` and spin up every component you need for manual verification:
+
+- `scripts/tests/multi-device.sh`: launches three Modbus simulators, the gateway (using the `MultiDevice` environment), and the multi-device test client (foreground in your terminal) so you can validate polling/subscription across devices.
+- `scripts/tests/multi-device.sh`: launches three Modbus simulators, the gateway (using the `MultiDevice` environment), and the multi-device test client (foreground in your terminal) so you can validate polling/subscription across devices. Pass `--auto` (or set `HSL_TEST_AUTO=1`) if you need it to run a fully automated demo scenario.
+- `scripts/tests/subscription.sh`: launches a single simulator, the gateway, and the subscriber client with a guided flow that mirrors the subscription demo and write tests.
+
+Run them from the repo root using Git Bash, WSL, Linux, or macOS `bash`. Each script builds the required projects, starts every process in the same terminal session, and cleans up automatically when you press `Ctrl+C`.
+
 ## 🐳 Docker Deployment
 
 Build and run the container:

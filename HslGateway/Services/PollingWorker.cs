@@ -40,9 +40,16 @@ public class PollingWorker : BackgroundService
                 _cache.UpdateDeviceStatus(device.Id, true);
                 
                 var deviceTags = _config.Tags.Where(t => t.DeviceId == device.Id).ToList();
+                var failedPollCycles = 0;
 
                 while (!token.IsCancellationRequested)
                 {
+                    var anySuccess = false;
+                    if (deviceTags.Count == 0)
+                    {
+                        anySuccess = true; // nothing to poll but connection is alive
+                    }
+
                     foreach (var tag in deviceTags)
                     {
                         try
@@ -57,11 +64,31 @@ public class PollingWorker : BackgroundService
                                 Quality = val.HasValue ? "good" : "bad"
                             };
                             _cache.Save(tagValue);
+
+                            if (val.HasValue)
+                            {
+                                anySuccess = true;
+                            }
                         }
                         catch (Exception ex)
                         {
                             _logger.LogError(ex, "Error reading tag {Tag} from {Device}", tag.Name, device.Id);
                         }
+                    }
+
+                    if (!anySuccess)
+                    {
+                        failedPollCycles++;
+                        _logger.LogWarning("Device {Device} had no successful tag reads in cycle #{Cycle}", device.Id, failedPollCycles);
+                        if (failedPollCycles >= 3)
+                        {
+                            throw new InvalidOperationException($"Device {device.Id} failed to return data for {failedPollCycles} consecutive polls.");
+                        }
+                    }
+                    else
+                    {
+                        failedPollCycles = 0;
+                        _cache.UpdateDeviceStatus(device.Id, true);
                     }
                     
                     await Task.Delay(device.PollIntervalMs, token);

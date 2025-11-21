@@ -36,6 +36,15 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
+    },
+    "HslGateway": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": false,
+      "applicationUrl": "http://localhost:50051",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "MultiDevice"
+      }
     }
   }
 }
