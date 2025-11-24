@@ -4,6 +4,8 @@ option csharp_namespace = "HslGateway.Grpc";
 
 package hslgateway;
 
+import "google/protobuf/wrappers.proto";
+
 service Gateway {
   rpc GetTagValue (TagRequest) returns (TagResponse);
   rpc WriteTagValue (WriteTagRequest) returns (WriteTagResponse);
@@ -11,6 +13,15 @@ service Gateway {
   rpc SubscribeDeviceStatus (DeviceRequest) returns (stream DeviceStatusResponse);
   rpc ListDevices (Empty) returns (DeviceList);
   rpc ListDeviceTags (DeviceRequest) returns (TagList);
+}
+
+service ConfigManager {
+  rpc ListDevicesConfig (Empty) returns (DeviceConfigList);
+  rpc UpsertDevice (DeviceConfigDto) returns (OperationStatus);
+  rpc DeleteDevice (DeviceRequest) returns (OperationStatus);
+  rpc ListTagConfigs (DeviceRequest) returns (TagConfigList);
+  rpc UpsertTag (TagConfigDto) returns (OperationStatus);
+  rpc DeleteTag (TagIdentifier) returns (OperationStatus);
 }
 
 message Empty {}
@@ -66,4 +77,45 @@ message TagInfo {
 
 message TagList {
   repeated TagInfo tags = 1;
+}
+
+message DeviceConfigDto {
+  string id = 1;
+  string type = 2;
+  string ip = 3;
+  int32 port = 4;
+  int32 pollIntervalMs = 5;
+  google.protobuf.Int32Value rack = 6;
+  google.protobuf.Int32Value slot = 7;
+  string portName = 8;
+  google.protobuf.Int32Value baudRate = 9;
+  google.protobuf.Int32Value dataBits = 10;
+  google.protobuf.Int32Value stopBits = 11;
+  google.protobuf.Int32Value parity = 12;
+  uint32 station = 13;
+}
+
+message DeviceConfigList {
+  repeated DeviceConfigDto devices = 1;
+}
+
+message TagConfigDto {
+  string deviceId = 1;
+  string name = 2;
+  string address = 3;
+  string dataType = 4;
+}
+
+message TagConfigList {
+  repeated TagConfigDto tags = 1;
+}
+
+message TagIdentifier {
+  string deviceId = 1;
+  string tagName = 2;
+}
+
+message OperationStatus {
+  bool success = 1;
+  string message = 2;
 }

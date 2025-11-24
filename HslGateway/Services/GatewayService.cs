@@ -1,8 +1,11 @@
 using Grpc.Core;
-using HslGateway.Config;
 using HslGateway.Grpc;
 using HslGateway.Models;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Channels;
 
 namespace HslGateway.Services;
@@ -10,19 +13,19 @@ namespace HslGateway.Services;
 public class GatewayService : Gateway.GatewayBase
 {
     private readonly TagValueCache _cache;
-    private readonly GatewayConfig _config;
     private readonly DeviceRegistry _registry;
+    private readonly GatewayConfigStore _configStore;
     private readonly ILogger<GatewayService> _logger;
 
     public GatewayService(
         TagValueCache cache,
-        IOptions<GatewayConfig> config,
         DeviceRegistry registry,
+        GatewayConfigStore configStore,
         ILogger<GatewayService> logger)
     {
         _cache = cache;
-        _config = config.Value;
         _registry = registry;
+        _configStore = configStore;
         _logger = logger;
     }
 
@@ -60,26 +63,29 @@ public class GatewayService : Gateway.GatewayBase
 
     public override Task<TagList> ListDeviceTags(DeviceRequest request, ServerCallContext context)
     {
-        var tags = _config.Tags
-            .Where(t => t.DeviceId == request.DeviceId)
-            .Select(t => new TagInfo
-            {
-                DeviceId = t.DeviceId,
-                TagName = t.Name,
-                Address = t.Address,
-                DataType = t.DataType ?? "double"
-            });
+        var tags = string.IsNullOrWhiteSpace(request.DeviceId)
+            ? _configStore.GetTags()
+            : _configStore.GetTags(request.DeviceId);
+
+        var projections = tags.Select(t => new TagInfo
+        {
+            DeviceId = t.DeviceId,
+            TagName = t.Name,
+            Address = t.Address,
+            DataType = t.DataType ?? "double"
+        });
             
         var response = new TagList();
-        response.Tags.AddRange(tags);
+        response.Tags.AddRange(projections);
         return Task.FromResult(response);
     }
+
     public override async Task<WriteTagResponse> WriteTagValue(WriteTagRequest request, ServerCallContext context)
     {
         try
         {
             var client = _registry.GetClient(request.DeviceId);
-            var tagConfig = _config.Tags.FirstOrDefault(t => t.DeviceId == request.DeviceId && t.Name == request.TagName);
+            var tagConfig = _configStore.GetTag(request.DeviceId, request.TagName);
 
             if (tagConfig == null)
             {
