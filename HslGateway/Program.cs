@@ -6,6 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.Configure<GatewayConfig>(builder.Configuration.GetSection("Gateway"));
+builder.Services.Configure<GatewayPersistenceOptions>(builder.Configuration.GetSection("GatewayPersistence"));
 builder.Services.AddSingleton<TagValueCache>();
 builder.Services.AddSingleton<GatewayConfigStore>();
 builder.Services.AddSingleton<DeviceRegistry>();

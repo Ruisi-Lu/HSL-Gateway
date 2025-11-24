@@ -315,3 +315,6 @@ ScaffoldingLog.txt
 
 # Visual Studio Code
 .vscode/
+
+# Runtime data (persisted configs, logs, etc.)
+data/

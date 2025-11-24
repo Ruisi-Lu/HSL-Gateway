@@ -36,9 +36,17 @@ public class ConfigManagerService : ConfigManager.ConfigManagerBase
         }
 
         var model = ToDeviceConfig(request);
-        _configStore.UpsertDevice(model);
-        _logger.LogInformation("Upserted device {DeviceId}", model.Id);
-        return Task.FromResult(Success("Device saved"));
+        try
+        {
+            _configStore.UpsertDevice(model);
+            _logger.LogInformation("Upserted device {DeviceId}", model.Id);
+            return Task.FromResult(Success("Device saved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upsert device {DeviceId}", model.Id);
+            return Task.FromResult(Failure($"Failed to save device: {ex.Message}"));
+        }
     }
 
     public override Task<OperationStatus> DeleteDevice(DeviceRequest request, ServerCallContext context)
@@ -48,8 +56,16 @@ public class ConfigManagerService : ConfigManager.ConfigManagerBase
             return Task.FromResult(Failure("deviceId is required"));
         }
 
-        var removed = _configStore.RemoveDevice(request.DeviceId);
-        return Task.FromResult(removed ? Success("Device removed") : Failure("Device not found"));
+        try
+        {
+            var removed = _configStore.RemoveDevice(request.DeviceId);
+            return Task.FromResult(removed ? Success("Device removed") : Failure("Device not found"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove device {DeviceId}", request.DeviceId);
+            return Task.FromResult(Failure($"Failed to remove device: {ex.Message}"));
+        }
     }
 
     public override Task<TagConfigList> ListTagConfigs(DeviceRequest request, ServerCallContext context)
@@ -76,9 +92,17 @@ public class ConfigManagerService : ConfigManager.ConfigManagerBase
             return Task.FromResult(Failure($"Device '{request.DeviceId}' not found"));
         }
 
-        _configStore.UpsertTag(ToTagConfig(request));
-        _logger.LogInformation("Upserted tag {DeviceId}/{TagName}", request.DeviceId, request.Name);
-        return Task.FromResult(Success("Tag saved"));
+        try
+        {
+            _configStore.UpsertTag(ToTagConfig(request));
+            _logger.LogInformation("Upserted tag {DeviceId}/{TagName}", request.DeviceId, request.Name);
+            return Task.FromResult(Success("Tag saved"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to upsert tag {DeviceId}/{TagName}", request.DeviceId, request.Name);
+            return Task.FromResult(Failure($"Failed to save tag: {ex.Message}"));
+        }
     }
 
     public override Task<OperationStatus> DeleteTag(TagIdentifier request, ServerCallContext context)
@@ -88,8 +112,16 @@ public class ConfigManagerService : ConfigManager.ConfigManagerBase
             return Task.FromResult(Failure("deviceId and tagName are required"));
         }
 
-        var removed = _configStore.RemoveTag(request.DeviceId, request.TagName);
-        return Task.FromResult(removed ? Success("Tag removed") : Failure("Tag not found"));
+        try
+        {
+            var removed = _configStore.RemoveTag(request.DeviceId, request.TagName);
+            return Task.FromResult(removed ? Success("Tag removed") : Failure("Tag not found"));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to remove tag {DeviceId}/{TagName}", request.DeviceId, request.TagName);
+            return Task.FromResult(Failure($"Failed to remove tag: {ex.Message}"));
+        }
     }
 
     private static string? ValidateDevice(DeviceConfigDto dto)
