@@ -130,8 +130,6 @@ dotnet run --project HslGateway/HslGateway.csproj
     { "id": "modbus_01" }
   ]
 }
-  ]
-}
 ```
 
 ### 4.3 寫入標籤數值 (WriteTagValue)
