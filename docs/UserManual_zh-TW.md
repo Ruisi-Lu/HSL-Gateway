@@ -158,6 +158,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 此為 Server-Streaming RPC，客戶端連線後會持續收到數據變更通知。
 
 **Request:**
+
 ```json
 {
   "deviceId": "modbus_01",
@@ -166,11 +167,59 @@ dotnet run --project HslGateway/HslGateway.csproj
 ```
 
 **Response Stream:**
+
 ```json
 { "deviceId": "modbus_01", "tagName": "line_power", "value": 100, ... }
 { "deviceId": "modbus_01", "tagName": "line_power", "value": 101, ... }
 ...
 ```
+
+#### 4.4.1 使用內建訂閱客戶端
+
+1. 依 2.2、2.3 節啟動模擬器與 Gateway。
+1. 執行互動式訂閱程式：
+
+```powershell
+dotnet run --project HslSubscriber/HslSubscriber.csproj http://localhost:50051 modbus_01 line_power
+```
+
+1. 在選單中選 `1` 以訂閱標籤值，或選 `2` 以監看設備狀態，按 Enter 可停止目前的訂閱。
+
+此工具同時提供 `GetTagValue`、`WriteTagValue`、`ListDevices`、`ListDeviceTags` 等快捷操作，適合快速驗證整體流程。
+
+#### 4.4.2 使用 grpcurl 或客製化客戶端
+
+需要腳本化流程或整合至 CI 時，可使用 `grpcurl`（或任一 gRPC SDK）：
+
+```bash
+grpcurl -plaintext \
+  -import-path HslGateway/Protos \
+  -proto gateway.proto \
+  -d '{"deviceId":"modbus_01","tagName":"line_power"}' \
+  localhost:50051 hslgateway.Gateway/SubscribeTagValue
+```
+
+命令會持續輸出直到您手動停止 (Ctrl+C)。若要同時監控多個標籤，可開多條串流或自行撰寫客戶端整合邏輯。
+
+### 4.5 訂閱設備狀態 (SubscribeDeviceStatus)
+
+`SubscribeDeviceStatus` 會回報設備連線/離線狀態，`deviceId` 可為空字串（表示所有設備）。
+
+```bash
+grpcurl -plaintext \
+  -import-path HslGateway/Protos \
+  -proto gateway.proto \
+  -d '{"deviceId":""}' \
+  localhost:50051 hslgateway.Gateway/SubscribeDeviceStatus
+```
+
+**範例回應：**
+
+```json
+{ "deviceId": "modbus_01", "isOnline": true, "timestampUtc": "2024-12-01T08:00:12.345Z" }
+```
+
+選單項目 `2`（HslSubscriber）會使用同一 API。若想要一次啟動模擬器、Gateway 與訂閱客戶端，可在 Bash/WSL/macOS 下執行 `scripts/tests/subscription.sh`。
 
 ## 5. 驗證工具 (HslVerifier)
 
@@ -180,7 +229,86 @@ dotnet run --project HslGateway/HslGateway.csproj
 dotnet run --project HslVerifier/HslVerifier.csproj
 ```
 
-## 5. 常見問題 (FAQ)
+## 6. 動態設備與標籤註冊 (ConfigManager)
+
+`ConfigManager` gRPC 服務允許您在不中斷 Gateway 的情況下新增、更新或刪除設備與標籤。變更會即時套用並同步寫入 `data/gateway-config.json`（或 `GatewayPersistence:ConfigFilePath` 指定的路徑）。
+
+### 6.1 查看目前配置
+
+```bash
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  localhost:50051 hslgateway.ConfigManager/ListDevicesConfig
+
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"modbus_01"}' \
+  localhost:50051 hslgateway.ConfigManager/ListTagConfigs
+```
+
+### 6.2 新增或更新設備
+
+```bash
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{
+        "id":"modbus_runtime",
+        "type":"ModbusTcp",
+        "ip":"127.0.0.1",
+        "port":50502,
+        "pollIntervalMs":1000
+      }' \
+  localhost:50051 hslgateway.ConfigManager/UpsertDevice
+```
+
+- TCP 設備必須提供 `ip` 與 `port`，Modbus RTU 則需改填 `portName` 及序列埠參數。
+- `pollIntervalMs` 必須大於 0，如需調整可再次呼叫 `UpsertDevice`。
+
+### 6.3 即時新增標籤
+
+```bash
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{
+        "deviceId":"modbus_runtime",
+        "name":"line_power",
+        "address":"40001",
+        "dataType":"short"
+      }' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+```
+
+新增後 Gateway 馬上開始輪詢；既有訂閱會在下一次輪詢後收到資料。
+
+### 6.4 移除設備或標籤
+
+```bash
+# 刪除整個設備（同時移除其標籤）
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"modbus_runtime"}' \
+  localhost:50051 hslgateway.ConfigManager/DeleteDevice
+
+# 僅刪除單一標籤
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"modbus_runtime","tagName":"line_power"}' \
+  localhost:50051 hslgateway.ConfigManager/DeleteTag
+```
+
+### 6.5 設定檔儲存與環境檔
+
+- 預設會在 `data/gateway-config.json` 留下最新快照，可透過 `GatewayPersistence:ConfigFilePath` 改到其他路徑。
+- 若要載入多設備示例 (`appsettings.MultiDevice.json`)，可設定 `ASPNETCORE_ENVIRONMENT=MultiDevice` 或執行 `dotnet run --project HslGateway/HslGateway.csproj --launch-profile MultiDevice`。
+- `scripts/tests/multi-device.sh` 會同時啟動模擬器、Gateway（MultiDevice Profile）與 `HslMultiDeviceTest`，方便驗證大量設備的動態更新。
+
+## 7. 常見問題 (FAQ)
+
+**Q: 如何新增支援的設備類型？**
+A: 需要修改 `DeviceRegistry.cs` 並實作新的 `IHslClient`。
+
+**Q: 輪詢速度太慢怎麼辦？**
+A: 請檢查 `PollIntervalMs` 設定，並確認網路連線品質。每個設備都是獨立執行緒，互不影響。
+
+**Q: 支援寫入功能嗎？**
+A: 是的，已支援 `WriteTagValue` API。
+
+**Q: 支援 Modbus RTU 嗎？**
+A: 是的，請在設定檔中指定 `Type` 為 `ModbusRtu` 並設定 `PortName` 等參數。
 
 **Q: 如何新增支援的設備類型？**
 A: 需要修改 `DeviceRegistry.cs` 並實作新的 `IHslClient`。

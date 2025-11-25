@@ -172,6 +172,53 @@ This is a Server-Streaming RPC. The client will receive continuous updates after
 ...
 ```
 
+#### 4.4.1 Quick Test with the Built-in Subscriber
+
+1. Start the simulator and gateway (see sections 2.2 and 2.3).
+1. Run the interactive subscriber client:
+
+```powershell
+dotnet run --project HslSubscriber/HslSubscriber.csproj http://localhost:50051 modbus_01 line_power
+```
+
+1. Choose option `1` in the menu to stream tag updates, or option `2` to monitor device status changes. Press `Enter` to stop the current subscription.
+
+The tool also exposes shortcuts for `GetTagValue`, `WriteTagValue`, `ListDevices`, and `ListDeviceTags`, making it the fastest way to validate end-to-end polling.
+
+#### 4.4.2 Subscribe via grpcurl or Custom Clients
+
+Use `grpcurl` (or any gRPC SDK) when you need a scriptable workflow or to integrate with CI:
+
+```bash
+grpcurl -plaintext \
+  -import-path HslGateway/Protos \
+  -proto gateway.proto \
+  -d '{"deviceId":"modbus_01","tagName":"line_power"}' \
+  localhost:50051 hslgateway.Gateway/SubscribeTagValue
+```
+
+The command keeps running until you stop it (Ctrl+C). Each response contains `timestampUtc`, `quality`, and the most recent numeric value. If you want to monitor multiple tags, run one subscription per stream or embed the logic in your own client using `Gateway.GatewayClient`.
+
+### 4.5 Subscribe Device Status (SubscribeDeviceStatus)
+
+`SubscribeDeviceStatus` streams live online/offline transitions for either all devices (empty `deviceId`) or a single device:
+
+```bash
+grpcurl -plaintext \
+  -import-path HslGateway/Protos \
+  -proto gateway.proto \
+  -d '{"deviceId":""}' \
+  localhost:50051 hslgateway.Gateway/SubscribeDeviceStatus
+```
+
+Sample response:
+
+```json
+{ "deviceId": "modbus_01", "isOnline": true, "timestampUtc": "2024-12-01T08:00:12.345Z" }
+```
+
+This is useful for dashboards that need to alert when a PLC drops offline. The `HslSubscriber` menu option `2` exercises the same API if you prefer an interactive client. For an automated smoke test across multiple devices, run `scripts/tests/subscription.sh` (Bash/WSL/macOS) which wires up the simulator, gateway, and subscriber in one terminal.
+
 ## 5. Verification Tool (HslVerifier)
 
 The project includes a built-in verification tool to test all API features.
@@ -180,7 +227,74 @@ The project includes a built-in verification tool to test all API features.
 dotnet run --project HslVerifier/HslVerifier.csproj
 ```
 
-## 5. FAQ
+## 6. Runtime Configuration & Dynamic Device Registration
+
+The `ConfigManager` gRPC service lets you add, update, or remove devices and tags without restarting the gateway. Every change is persisted to `data/gateway-config.json` (or the path defined by `GatewayPersistence:ConfigFilePath`), and the `DeviceRegistry` hot-swaps the corresponding drivers automatically.
+
+### 6.1 List the Current Configuration
+
+```bash
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  localhost:50051 hslgateway.ConfigManager/ListDevicesConfig
+
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"modbus_01"}' \
+  localhost:50051 hslgateway.ConfigManager/ListTagConfigs
+```
+
+### 6.2 Add or Update a Device
+
+```bash
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{
+        "id":"modbus_runtime",
+        "type":"ModbusTcp",
+        "ip":"127.0.0.1",
+        "port":50502,
+        "pollIntervalMs":1000
+      }' \
+  localhost:50051 hslgateway.ConfigManager/UpsertDevice
+```
+
+- `ip`/`port` are required for TCP devices, while `portName`/serial fields are required for Modbus RTU.
+- `pollIntervalMs` must be > 0. You can change it later with another `UpsertDevice` call.
+
+### 6.3 Add Tags Dynamically
+
+```bash
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{
+        "deviceId":"modbus_runtime",
+        "name":"line_power",
+        "address":"40001",
+        "dataType":"short"
+      }' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+```
+
+The gateway starts polling the new tag immediately. Existing subscribers receive the next change as soon as the `PollingWorker` captures it.
+
+### 6.4 Remove Devices or Tags
+
+```bash
+# Remove a device (also prunes its tags)
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"modbus_runtime"}' \
+  localhost:50051 hslgateway.ConfigManager/DeleteDevice
+
+# Remove a single tag
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"modbus_runtime","tagName":"line_power"}' \
+  localhost:50051 hslgateway.ConfigManager/DeleteTag
+```
+
+### 6.5 Persisted Files and Environments
+
+- The persisted snapshot lives under `data/gateway-config.json` by default. Set `GatewayPersistence:ConfigFilePath` in `appsettings*.json` to move it elsewhere.
+- To preload the multi-device sample (`appsettings.MultiDevice.json`), run the gateway with `ASPNETCORE_ENVIRONMENT=MultiDevice` or use `dotnet run --project HslGateway/HslGateway.csproj --launch-profile MultiDevice`.
+- The `scripts/tests/multi-device.sh` helper spins up the simulator, gateway (MultiDevice profile), and `HslMultiDeviceTest` client to showcase large-scale dynamic updates.
+
+## 7. FAQ
 
 **Q: How to add new device types?**
 A: You need to modify `DeviceRegistry.cs` and implement a new `IHslClient`.
