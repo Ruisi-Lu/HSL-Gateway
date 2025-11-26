@@ -14,6 +14,7 @@ HSL Gateway is a high-performance, production-ready gRPC service designed to bri
 - **Docker Ready**: Includes a multi-stage Dockerfile for easy deployment on Linux/Kubernetes.
 - **Simulator Included**: Comes with a Modbus TCP simulator for testing and verification.
 - **Scalable**: Supports connecting to multiple devices simultaneously with parallel polling.
+- **Enterprise Ready**: Boots with HslCommunication enterprise licenses supplied via environment variables or certificate files.
 
 ## 🛠️ Technology Stack
 
@@ -32,12 +33,14 @@ HSL Gateway is a high-performance, production-ready gRPC service designed to bri
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/HSL-gateway.git
    cd HSL-gateway
    ```
 
-2. Restore dependencies:
+1. Restore dependencies:
+
    ```bash
    dotnet restore
    ```
@@ -45,20 +48,24 @@ HSL Gateway is a high-performance, production-ready gRPC service designed to bri
 ### Running Locally
 
 1. **Start the Simulator** (Optional, for testing):
-   ```bash
-   dotnet run --project HslSimulator/HslSimulator.csproj
-   ```
-   *Listens on port 50502.*
 
-2. **Start the Gateway**:
-   ```bash
-   dotnet run --project HslGateway/HslGateway.csproj
-   ```
-   *Listens on port 50051.*
+  ```bash
+  dotnet run --project HslSimulator/HslSimulator.csproj
+  ```
+
+  *Listens on port 50502.*
+
+1. **Start the Gateway**:
+
+  ```bash
+  dotnet run --project HslGateway/HslGateway.csproj
+  ```
+
+  *Listens on port 50051.*
 
 ## ⚙️ Configuration
 
-Configure devices and tags in `appsettings.json`.
+Configure devices and tags in `appsettings.json` (or manage them dynamically through the `ConfigManager` gRPC service, which persists to `data/gateway-config.json`).
 
 ```json
 "Gateway": {
@@ -105,26 +112,52 @@ The Gateway supports connecting to multiple devices simultaneously. Simply add m
 - A slow or disconnected device will **not** affect the performance of other devices.
 - You can mix different protocols (e.g., one Siemens PLC and one Modbus device) in the same configuration.
 
+### Enterprise License Bootstrap
+
+Set `EnterpriseLicense` in `HslGateway/appsettings.json` (or the environment-specific file) to enable automatic activation of HslCommunication enterprise features at startup:
+
+```json
+"EnterpriseLicense": {
+  "AutoLoadOnStartup": true,
+  "CertificateFilePath": "data/hsl-enterprise.cert",
+  "CertificateEnvironmentVariable": "HSL_ENTERPRISE_CERT_BASE64",
+  "AuthorizationCodeEnvironmentVariable": "HSL_ENTERPRISE_AUTH_CODE",
+  "ContactInfo": "ops-team@example.com"
+}
+```
+
+On boot the gateway applies the first available artifact in this order:
+
+1. `HSL_ENTERPRISE_CERT_BASE64` (Base64 string that represents the official HslCommunication certificate file).
+2. `HSL_ENTERPRISE_AUTH_CODE` (plain-text authorization code provided by HslCommunication).
+3. The file path defined by `CertificateFilePath` (default `data/hsl-enterprise.cert`).
+
+If both `AutoLoadOnStartup` is `true` and one of the above values exists, the hosted `EnterpriseLicenseInitializer` logs the successful activation and moves on with the normal startup flow. Clear or disable `AutoLoadOnStartup` if you need to run in community mode.
+
 ## 🔌 API Usage (gRPC)
 
 You can use any gRPC client (C#, Python, Go, Node.js, etc.) or tools like [grpcurl](https://github.com/fullstorydev/grpcurl).
 
 **Get Tag Value:**
+
 ```bash
 grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power"}' localhost:50051 hslgateway.Gateway/GetTagValue
 ```
 
 **List Devices:**
+
 ```bash
 grpcurl -plaintext localhost:50051 hslgateway.Gateway/ListDevices
 ```
 
 **Write Tag Value:**
+
 ```bash
 grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power", "value": 50}' localhost:50051 hslgateway.Gateway/WriteTagValue
 ```
 
 **Subscribe to Tag Value (Streaming):**
+
 ```bash
 grpcurl -plaintext -d '{"deviceId": "modbus_01", "tagName": "line_power"}' localhost:50051 hslgateway.Gateway/SubscribeTagValue
 ```

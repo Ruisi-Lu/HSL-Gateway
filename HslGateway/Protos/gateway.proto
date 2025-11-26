@@ -22,6 +22,7 @@ service ConfigManager {
   rpc ListTagConfigs (DeviceRequest) returns (TagConfigList);
   rpc UpsertTag (TagConfigDto) returns (OperationStatus);
   rpc DeleteTag (TagIdentifier) returns (OperationStatus);
+  rpc ActivateEnterprise (EnterpriseActivationRequest) returns (OperationStatus);
 }
 
 message Empty {}
@@ -118,4 +119,10 @@ message TagIdentifier {
 message OperationStatus {
   bool success = 1;
   string message = 2;
+}
+
+message EnterpriseActivationRequest {
+  bytes certificateBytes = 1;
+  string authorizationCode = 2;
+  bool persistCertificate = 3;
 }

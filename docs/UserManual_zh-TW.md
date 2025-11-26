@@ -60,6 +60,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 | `Station` | 站號 (僅 Modbus RTU) | `1` |
 
 **範例：**
+
 ```json
 {
   "Id": "siemens_01",
@@ -84,6 +85,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 | `DataType` | 資料型別 (`double`, `int`, `short`, `float`) | `"double"` |
 
 **範例：**
+
 ```json
 {
   "DeviceId": "siemens_01",
@@ -93,6 +95,28 @@ dotnet run --project HslGateway/HslGateway.csproj
 }
 ```
 
+### 3.3 企業版授權 (Enterprise License)
+
+若您持有 HslCommunication 的企業版授權，可以在 `appsettings.json`（或環境專屬檔案）中設定 `EnterpriseLicense`，讓 Gateway 在啟動時自動載入授權：
+
+```json
+"EnterpriseLicense": {
+  "AutoLoadOnStartup": true,
+  "CertificateFilePath": "data/hsl-enterprise.cert",
+  "CertificateEnvironmentVariable": "HSL_ENTERPRISE_CERT_BASE64",
+  "AuthorizationCodeEnvironmentVariable": "HSL_ENTERPRISE_AUTH_CODE",
+  "ContactInfo": "ops-team@example.com"
+}
+```
+
+當 `AutoLoadOnStartup` 為 `true` 時，系統會依以下順序嘗試載入授權，任一成功即停止：
+
+1. `HSL_ENTERPRISE_CERT_BASE64`: 將官方授權憑證檔案轉為 Base64 字串後寫入此環境變數。
+2. `HSL_ENTERPRISE_AUTH_CODE`: 將 HslCommunication 提供的授權碼 (Authorization Code) 直接寫入此環境變數。
+3. `CertificateFilePath`: 將授權檔案放在指定路徑，預設是 `data/hsl-enterprise.cert`。
+
+內建的 `EnterpriseLicenseInitializer` 會在日誌中紀錄使用了哪個來源。如果三種來源皆不存在，Gateway 會以社群版模式啟動而不會失敗；如需停用自動授權，可將 `AutoLoadOnStartup` 設為 `false`。
+
 ## 4. API 使用指南 (gRPC)
 
 本服務使用 gRPC 介面，預設 Port 為 `50051`。
@@ -100,6 +124,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 ### 4.1 取得標籤數值 (GetTagValue)
 
 **Request:**
+
 ```json
 {
   "deviceId": "siemens_01",
@@ -108,6 +133,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 ```
 
 **Response:**
+
 ```json
 {
   "deviceId": "siemens_01",
@@ -123,6 +149,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 **Request:** `Empty`
 
 **Response:**
+
 ```json
 {
   "devices": [
@@ -135,6 +162,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 ### 4.3 寫入標籤數值 (WriteTagValue)
 
 **Request:**
+
 ```json
 {
   "deviceId": "modbus_01",
@@ -144,6 +172,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -177,9 +206,9 @@ dotnet run --project HslGateway/HslGateway.csproj
 1. 依 2.2、2.3 節啟動模擬器與 Gateway。
 1. 執行互動式訂閱程式：
 
-```powershell
-dotnet run --project HslSubscriber/HslSubscriber.csproj http://localhost:50051 modbus_01 line_power
-```
+  ```powershell
+  dotnet run --project HslSubscriber/HslSubscriber.csproj http://localhost:50051 modbus_01 line_power
+  ```
 
 1. 在選單中選 `1` 以訂閱標籤值，或選 `2` 以監看設備狀態，按 Enter 可停止目前的訂閱。
 

@@ -84,6 +84,7 @@ Define data points to read in the `Gateway:Tags` section.
 | `DataType` | Data Type (`double`, `int`, `short`, `float`) | `"double"` |
 
 **Example:**
+
 ```json
 {
   "DeviceId": "siemens_01",
@@ -93,6 +94,28 @@ Define data points to read in the `Gateway:Tags` section.
 }
 ```
 
+### 3.3 Enterprise License
+
+Set the `EnterpriseLicense` section in `appsettings.json` (or `appsettings.<Environment>.json`) to have the gateway automatically switch to the HslCommunication enterprise edition as soon as it starts:
+
+```json
+"EnterpriseLicense": {
+  "AutoLoadOnStartup": true,
+  "CertificateFilePath": "data/hsl-enterprise.cert",
+  "CertificateEnvironmentVariable": "HSL_ENTERPRISE_CERT_BASE64",
+  "AuthorizationCodeEnvironmentVariable": "HSL_ENTERPRISE_AUTH_CODE",
+  "ContactInfo": "ops-team@example.com"
+}
+```
+
+When `AutoLoadOnStartup` is `true`, the gateway evaluates the sources in this order and stops at the first successful activation:
+
+1. `HSL_ENTERPRISE_CERT_BASE64`: set this environment variable to the Base64 representation of your HslCommunication certificate file.
+2. `HSL_ENTERPRISE_AUTH_CODE`: alternatively, set this variable to the plain-text authorization code supplied by HslCommunication.
+3. `CertificateFilePath`: keep a certificate file on disk (default `data/hsl-enterprise.cert`).
+
+The `EnterpriseLicenseInitializer` hosted service logs which source was applied. If none of the three inputs exist, the gateway continues in community mode without failing startup. Clear `AutoLoadOnStartup` if you want to skip license activation entirely.
+
 ## 4. API Usage (gRPC)
 
 The service uses gRPC and listens on Port `50051` by default.
@@ -100,6 +123,7 @@ The service uses gRPC and listens on Port `50051` by default.
 ### 4.1 Get Tag Value (GetTagValue)
 
 **Request:**
+
 ```json
 {
   "deviceId": "siemens_01",
@@ -108,6 +132,7 @@ The service uses gRPC and listens on Port `50051` by default.
 ```
 
 **Response:**
+
 ```json
 {
   "deviceId": "siemens_01",
@@ -123,6 +148,7 @@ The service uses gRPC and listens on Port `50051` by default.
 **Request:** `Empty`
 
 **Response:**
+
 ```json
 {
   "devices": [
@@ -130,13 +156,12 @@ The service uses gRPC and listens on Port `50051` by default.
     { "id": "modbus_01" }
   ]
 }
-  ]
-}
 ```
 
 ### 4.3 Write Tag Value (WriteTagValue)
 
 **Request:**
+
 ```json
 {
   "deviceId": "modbus_01",
@@ -146,6 +171,7 @@ The service uses gRPC and listens on Port `50051` by default.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -158,6 +184,7 @@ The service uses gRPC and listens on Port `50051` by default.
 This is a Server-Streaming RPC. The client will receive continuous updates after connection.
 
 **Request:**
+
 ```json
 {
   "deviceId": "modbus_01",
@@ -166,6 +193,7 @@ This is a Server-Streaming RPC. The client will receive continuous updates after
 ```
 
 **Response Stream:**
+
 ```json
 { "deviceId": "modbus_01", "tagName": "line_power", "value": 100, ... }
 { "deviceId": "modbus_01", "tagName": "line_power", "value": 101, ... }
@@ -177,9 +205,9 @@ This is a Server-Streaming RPC. The client will receive continuous updates after
 1. Start the simulator and gateway (see sections 2.2 and 2.3).
 1. Run the interactive subscriber client:
 
-```powershell
-dotnet run --project HslSubscriber/HslSubscriber.csproj http://localhost:50051 modbus_01 line_power
-```
+  ```powershell
+  dotnet run --project HslSubscriber/HslSubscriber.csproj http://localhost:50051 modbus_01 line_power
+  ```
 
 1. Choose option `1` in the menu to stream tag updates, or option `2` to monitor device status changes. Press `Enter` to stop the current subscription.
 
