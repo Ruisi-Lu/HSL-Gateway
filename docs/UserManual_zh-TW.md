@@ -51,6 +51,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 | `Port` | 連線 Port | `102` (Siemens), `502` (Modbus) |
 | `Rack` | 機架號 (僅 Siemens) | `0` |
 | `Slot` | 插槽號 (僅 Siemens) | `1` |
+| `PlcModel` | Siemens PLC 系列（`S300`, `S1200`, `S1500` 等） | `"S300"` |
 | `PollIntervalMs` | 輪詢間隔 (毫秒) | `1000` |
 | `PortName` | 序列埠名稱 (僅 Modbus RTU) | `"COM1"` 或 `"/dev/ttyUSB0"` |
 | `BaudRate` | 鮑率 (僅 Modbus RTU) | `9600` |
@@ -69,6 +70,7 @@ dotnet run --project HslGateway/HslGateway.csproj
   "Port": 102,
   "Rack": 0,
   "Slot": 1,
+  "PlcModel": "S1500",
   "PollIntervalMs": 1000
 }
 ```
@@ -82,7 +84,7 @@ dotnet run --project HslGateway/HslGateway.csproj
 | `DeviceId` | 對應的設備 ID | `"siemens_01"` |
 | `Name` | 標籤名稱 (自訂) | `"motor_speed"` |
 | `Address` | 設備位址 | `"DB1.0"` (Siemens), `"40001"` (Modbus) |
-| `DataType` | 資料型別 (`double`, `int`, `short`, `float`) | `"double"` |
+| `DataType` | 資料型別 (`double`, `int`, `short`, `float`, `bool`) | `"double"` |
 
 **範例：**
 
@@ -116,6 +118,43 @@ dotnet run --project HslGateway/HslGateway.csproj
 3. `CertificateFilePath`: 將授權檔案放在指定路徑，預設是 `data/hsl-enterprise.cert`。
 
 內建的 `EnterpriseLicenseInitializer` 會在日誌中紀錄使用了哪個來源。如果三種來源皆不存在，Gateway 會以社群版模式啟動而不會失敗；如需停用自動授權，可將 `AutoLoadOnStartup` 設為 `false`。
+
+### 3.4 S7-300 測試伺服器示例
+
+Repo 內的 `s7_300_demo` 設備預設指向 HslCommunication 官方公開的 S7-300 測試 CPU（`IP = 118.24.36.220`、`Rack = 0`、`Slot = 2`）。若想在執行中的 Gateway 透過 gRPC 新增該裝置，可使用：
+
+```powershell
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{
+        "id":"s7_demo_runtime",
+        "type":"SiemensS7",
+        "ip":"118.24.36.220",
+        "port":102,
+        "rack":0,
+        "slot":2,
+        "plcModel":"S300",
+        "pollIntervalMs":1000
+      }' \
+  localhost:50051 hslgateway.ConfigManager/UpsertDevice
+```
+
+接著依官方說明新增三個測試標籤：
+
+```powershell
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"s7_demo_runtime","name":"coil_m100_0","address":"M100.0","dataType":"bool"}' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"s7_demo_runtime","name":"word_mw100","address":"M100","dataType":"short"}' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"s7_demo_runtime","name":"db1_real","address":"DB1.DBD0","dataType":"float"}' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+```
+
+完成後即可透過 `GetTagValue`/`SubscribeTagValue` 驗證遠端 PLC 的即時資料，無須手動編輯 `data/gateway-config.json`。
 
 ## 4. API 使用指南 (gRPC)
 

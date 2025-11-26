@@ -194,6 +194,7 @@ public class ConfigManagerService : ConfigManager.ConfigManagerBase
             PollIntervalMs = dto.PollIntervalMs,
             Rack = dto.Rack,
             Slot = dto.Slot,
+            PlcModel = string.IsNullOrWhiteSpace(dto.PlcModel) ? null : dto.PlcModel.Trim(),
             PortName = string.IsNullOrWhiteSpace(dto.PortName) ? null : dto.PortName.Trim(),
             BaudRate = dto.BaudRate,
             DataBits = dto.DataBits,
@@ -224,7 +225,8 @@ public class ConfigManagerService : ConfigManager.ConfigManagerBase
             Port = config.Port,
             PollIntervalMs = config.PollIntervalMs,
             PortName = config.PortName ?? string.Empty,
-            Station = config.Station
+            Station = config.Station,
+            PlcModel = config.PlcModel ?? string.Empty
         };
 
         dto.Rack = config.Rack;

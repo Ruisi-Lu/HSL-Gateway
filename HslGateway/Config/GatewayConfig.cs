@@ -14,6 +14,7 @@ public class DeviceConfig
     public int Port { get; set; }
     public int? Rack { get; set; } // for Siemens
     public int? Slot { get; set; } // for Siemens
+    public string? PlcModel { get; set; } // e.g. "S300", "S1200"
     public int PollIntervalMs { get; set; } = 1000;
 
     // Serial Parameters

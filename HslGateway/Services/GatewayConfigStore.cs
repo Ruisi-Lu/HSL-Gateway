@@ -154,6 +154,7 @@ public class GatewayConfigStore
             Port = source.Port,
             Rack = source.Rack,
             Slot = source.Slot,
+            PlcModel = source.PlcModel,
             PollIntervalMs = source.PollIntervalMs,
             PortName = source.PortName,
             BaudRate = source.BaudRate,

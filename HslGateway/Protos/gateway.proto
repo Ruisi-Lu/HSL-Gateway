@@ -94,6 +94,7 @@ message DeviceConfigDto {
   google.protobuf.Int32Value stopBits = 11;
   google.protobuf.Int32Value parity = 12;
   uint32 station = 13;
+  string plcModel = 14;
 }
 
 message DeviceConfigList {

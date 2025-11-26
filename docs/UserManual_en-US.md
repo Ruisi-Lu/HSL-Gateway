@@ -51,6 +51,7 @@ Define devices to connect to in the `Gateway:Devices` section.
 | `Port` | Connection Port | `102` (Siemens), `502` (Modbus) |
 | `Rack` | Rack Number (Siemens only) | `0` |
 | `Slot` | Slot Number (Siemens only) | `1` |
+| `PlcModel` | Siemens PLC series (`S300`, `S1200`, `S1500`, etc.) | `"S300"` |
 | `PollIntervalMs` | Polling Interval (ms) | `1000` |
 | `PortName` | Serial Port Name (Modbus RTU only) | `"COM1"` or `"/dev/ttyUSB0"` |
 | `BaudRate` | Baud Rate (Modbus RTU only) | `9600` |
@@ -60,6 +61,7 @@ Define devices to connect to in the `Gateway:Devices` section.
 | `Station` | Station ID (Modbus RTU only) | `1` |
 
 **Example:**
+
 ```json
 {
   "Id": "siemens_01",
@@ -68,6 +70,7 @@ Define devices to connect to in the `Gateway:Devices` section.
   "Port": 102,
   "Rack": 0,
   "Slot": 1,
+  "PlcModel": "S1500",
   "PollIntervalMs": 1000
 }
 ```
@@ -81,7 +84,7 @@ Define data points to read in the `Gateway:Tags` section.
 | `DeviceId` | Corresponding Device ID | `"siemens_01"` |
 | `Name` | Tag Name (Custom) | `"motor_speed"` |
 | `Address` | Device Address | `"DB1.0"` (Siemens), `"40001"` (Modbus) |
-| `DataType` | Data Type (`double`, `int`, `short`, `float`) | `"double"` |
+| `DataType` | Data Type (`double`, `int`, `short`, `float`, `bool`) | `"double"` |
 
 **Example:**
 
@@ -115,6 +118,43 @@ When `AutoLoadOnStartup` is `true`, the gateway evaluates the sources in this or
 3. `CertificateFilePath`: keep a certificate file on disk (default `data/hsl-enterprise.cert`).
 
 The `EnterpriseLicenseInitializer` hosted service logs which source was applied. If none of the three inputs exist, the gateway continues in community mode without failing startup. Clear `AutoLoadOnStartup` if you want to skip license activation entirely.
+
+### 3.4 Siemens S7-300 Sample (Test Server)
+
+An S7-300 friendly preset (`s7_300_demo`) now ships with the repository and targets the public HslCommunication demo CPU (`IP = 118.24.36.220`, `Rack = 0`, `Slot = 2`). You can push the same configuration at runtime over gRPC:
+
+```powershell
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{
+        "id":"s7_demo_runtime",
+        "type":"SiemensS7",
+        "ip":"118.24.36.220",
+        "port":102,
+        "rack":0,
+        "slot":2,
+        "plcModel":"S300",
+        "pollIntervalMs":1000
+      }' \
+  localhost:50051 hslgateway.ConfigManager/UpsertDevice
+```
+
+Add the three demo tags highlighted in the HslCommunication quick start:
+
+```powershell
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"s7_demo_runtime","name":"coil_m100_0","address":"M100.0","dataType":"bool"}' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"s7_demo_runtime","name":"word_mw100","address":"M100","dataType":"short"}' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+
+grpcurl -plaintext -import-path HslGateway/Protos -proto gateway.proto \
+  -d '{"deviceId":"s7_demo_runtime","name":"db1_real","address":"DB1.DBD0","dataType":"float"}' \
+  localhost:50051 hslgateway.ConfigManager/UpsertTag
+```
+
+Use `GetTagValue` or `SubscribeTagValue` against `s7_demo_runtime` to verify the remote PLC connection without touching the persisted JSON snapshot.
 
 ## 4. API Usage (gRPC)
 
