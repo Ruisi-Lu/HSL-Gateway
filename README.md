@@ -2,7 +2,7 @@
 
 > **Vibe Code** edition.
 
-HSL Gateway is a high-performance, production-ready gRPC service designed to bridge industrial devices (Siemens S7, Modbus TCP) with modern IT systems. Built on **.NET 8**, it leverages the **HslCommunication** library to poll devices efficiently and exposes real-time data via a **gRPC** interface.
+HSL Gateway is a high-performance, production-ready gRPC service designed to bridge industrial devices (Siemens S7, Modbus TCP) with modern IT systems. Built on **.NET 10 LTS**, it leverages the **HslCommunication** library to poll devices efficiently and exposes real-time data via a **gRPC** interface.
 
 ## 🚀 Features
 
@@ -18,7 +18,7 @@ HSL Gateway is a high-performance, production-ready gRPC service designed to bri
 
 ## 🛠️ Technology Stack
 
-- **Framework**: .NET 8 (ASP.NET Core)
+- **Framework**: .NET 10 LTS (ASP.NET Core)
 - **Communication**: gRPC (HTTP/2)
 - **Driver Library**: [HslCommunication](https://github.com/dathlin/HslCommunication) (NuGet)
 - **Architecture**: Clean Architecture with Dependency Injection
@@ -27,7 +27,7 @@ HSL Gateway is a high-performance, production-ready gRPC service designed to bri
 
 ### Prerequisites
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
 - Docker (optional, for containerized deployment)
 
 ### Installation

@@ -5,7 +5,7 @@ HSL Gateway 是一個高效能的工業物聯網閘道器，旨在將工業設�
 ## 1. 系統需求
 
 - **作業系統**: Windows, Linux, 或 macOS
-- **執行環境**: .NET 8 SDK 或 Runtime
+- **執行環境**: .NET 10 SDK 或 Runtime
 - **容器化 (選用)**: Docker
 
 ## 2. 快速開始

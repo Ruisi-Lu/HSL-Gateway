@@ -5,7 +5,7 @@ HSL Gateway is a high-performance Industrial IoT gateway designed to bridge indu
 ## 1. System Requirements
 
 - **OS**: Windows, Linux, or macOS
-- **Runtime**: .NET 8 SDK or Runtime
+- **Runtime**: .NET 10 SDK or Runtime
 - **Containerization (Optional)**: Docker
 
 ## 2. Quick Start
