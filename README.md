@@ -1,6 +1,5 @@
 # HSL Gateway
 
-> **Vibe Code** edition.
 
 HSL Gateway is a high-performance, production-ready gRPC service designed to bridge industrial devices (Siemens S7, Modbus TCP) with modern IT systems. Built on **.NET 10 LTS**, it leverages the **HslCommunication** library to poll devices efficiently and exposes real-time data via a **gRPC** interface.
 
@@ -184,4 +183,5 @@ docker run -p 50051:50051 hsl-gateway
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 
